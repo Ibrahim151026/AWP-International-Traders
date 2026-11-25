@@ -1,0 +1,6 @@
+{
+  "name": "Meridian Export Group",
+  "description": "International B2B export catalog, real-time shipment tracking, multilingual client portal, bulk inventory import, and accounting report platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

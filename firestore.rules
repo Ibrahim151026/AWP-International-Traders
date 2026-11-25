@@ -1,0 +1,362 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core identity and validation primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isVerifiedUser() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'habibullah1990487@gmail.com' ||
+        request.auth.token.email == 'sak1990487@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Entity validation blueprints
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+        'sku', 'name', 'category', 'hsCode', 'description', 'fobPriceUsd',
+        'moq', 'unit', 'originPort', 'leadTimeDays', 'weightKg', 'dimensions',
+        'certifications', 'availability', 'imageUrl', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'sku', 'name', 'category', 'hsCode', 'description', 'fobPriceUsd',
+        'leastAmount', 'highestAmount', 'leastQuantity', 'highestQuantity', 'productQuality',
+        'moq', 'unit', 'originPort', 'leadTimeDays', 'weightKg', 'dimensions',
+        'certifications', 'availability', 'imageUrl', 'images', 'imageUrls', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.sku) && data.sku.size() <= 64 &&
+      data.name is string && data.name.size() >= 1 && data.name.size() <= 160 &&
+      data.category is string && data.category.size() >= 1 && data.category.size() <= 80 &&
+      data.hsCode is string && data.hsCode.size() >= 1 && data.hsCode.size() <= 32 &&
+      data.description is string && data.description.size() >= 1 && data.description.size() <= 2000 &&
+      data.fobPriceUsd is number && data.fobPriceUsd >= 0 &&
+      (!('leastAmount' in data) || (data.leastAmount is number && data.leastAmount >= 0)) &&
+      (!('highestAmount' in data) || (
+        data.highestAmount is number &&
+        data.highestAmount >= 0 &&
+        (!('leastAmount' in data) || data.highestAmount >= data.leastAmount)
+      )) &&
+      (!('leastQuantity' in data) || (data.leastQuantity is number && data.leastQuantity >= 1)) &&
+      (!('highestQuantity' in data) || (
+        data.highestQuantity is number &&
+        data.highestQuantity >= 1 &&
+        (!('leastQuantity' in data) || data.highestQuantity >= data.leastQuantity)
+      )) &&
+      (!('productQuality' in data) || (data.productQuality is string && data.productQuality.size() <= 160)) &&
+      data.moq is number && data.moq >= 1 &&
+      data.unit is string && data.unit.size() >= 1 && data.unit.size() <= 40 &&
+      data.originPort is string && data.originPort.size() >= 1 && data.originPort.size() <= 100 &&
+      data.leadTimeDays is number && data.leadTimeDays >= 1 &&
+      data.weightKg is number && data.weightKg >= 0 &&
+      data.dimensions is string && data.dimensions.size() >= 1 && data.dimensions.size() <= 80 &&
+      data.certifications is string && data.certifications.size() <= 200 &&
+      data.availability in ['in_stock', 'made_to_order', 'out_of_stock'] &&
+      data.imageUrl is string && data.imageUrl.size() <= 350000 &&
+      (!('images' in data) || (
+        data.images is list &&
+        data.images.size() <= 6 &&
+        (data.images.size() == 0 || (data.images[0] is string && data.images[0].size() <= 350000))
+      )) &&
+      (!('imageUrls' in data) || (
+        data.imageUrls is list &&
+        data.imageUrls.size() <= 6 &&
+        (data.imageUrls.size() == 0 || (data.imageUrls[0] is string && data.imageUrls[0].size() <= 350000))
+      )) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidClient(data) {
+      return data.keys().hasAll([
+        'uid', 'email', 'companyName', 'contactName', 'phone', 'country',
+        'destinationPort', 'taxId', 'preferredIncoterms', 'preferredLanguage',
+        'role', 'status', 'creditTier', 'accountNotes', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'uid', 'email', 'companyName', 'contactName', 'phone', 'country',
+        'destinationPort', 'taxId', 'preferredIncoterms', 'preferredLanguage',
+        'role', 'status', 'creditTier', 'accountNotes', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.uid) &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+      data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 160 &&
+      data.contactName is string && data.contactName.size() >= 1 && data.contactName.size() <= 120 &&
+      data.phone is string && data.phone.size() <= 40 &&
+      data.country is string && data.country.size() >= 1 && data.country.size() <= 80 &&
+      data.destinationPort is string && data.destinationPort.size() <= 120 &&
+      data.taxId is string && data.taxId.size() <= 64 &&
+      data.preferredIncoterms in ['FOB', 'CIF', 'EXW', 'DDP', 'CFR'] &&
+      data.preferredLanguage in ['en', 'es', 'fr', 'de', 'zh'] &&
+      data.role == 'client' &&
+      data.status in ['active', 'pending_verification', 'suspended'] &&
+      data.creditTier in ['Standard', 'Net-30', 'LC-Verified'] &&
+      data.accountNotes is string && data.accountNotes.size() <= 500 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+        'orderNumber', 'clientUid', 'clientEmail', 'companyName', 'country',
+        'destinationPort', 'incoterms', 'productId', 'productSku', 'productName',
+        'quantity', 'unitPriceUsd', 'subtotalUsd', 'freightUsd', 'totalUsd',
+        'status', 'trackingNumber', 'notes', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'orderNumber', 'clientUid', 'clientEmail', 'companyName', 'country',
+        'destinationPort', 'incoterms', 'productId', 'productSku', 'productName',
+        'quantity', 'unitPriceUsd', 'subtotalUsd', 'freightUsd', 'totalUsd',
+        'status', 'trackingNumber', 'notes', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.orderNumber) && data.orderNumber.size() <= 40 &&
+      isValidId(data.clientUid) &&
+      data.clientEmail is string && data.clientEmail.size() >= 3 && data.clientEmail.size() <= 160 &&
+      data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 160 &&
+      data.country is string && data.country.size() >= 1 && data.country.size() <= 80 &&
+      data.destinationPort is string && data.destinationPort.size() >= 1 && data.destinationPort.size() <= 120 &&
+      data.incoterms in ['FOB', 'CIF', 'EXW', 'DDP', 'CFR'] &&
+      isValidId(data.productId) &&
+      data.productSku is string && data.productSku.size() >= 1 && data.productSku.size() <= 64 &&
+      data.productName is string && data.productName.size() >= 1 && data.productName.size() <= 160 &&
+      data.quantity is number && data.quantity >= 1 &&
+      data.unitPriceUsd is number && data.unitPriceUsd >= 0 &&
+      data.subtotalUsd is number && data.subtotalUsd >= 0 &&
+      data.freightUsd is number && data.freightUsd >= 0 &&
+      data.totalUsd is number && data.totalUsd >= 0 &&
+      data.status in ['pending_review', 'confirmed', 'customs_dispatch', 'in_transit', 'delivered', 'cancelled'] &&
+      data.trackingNumber is string && data.trackingNumber.size() <= 64 &&
+      data.notes is string && data.notes.size() <= 1000 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidShipment(data) {
+      return data.keys().hasAll([
+        'trackingNumber', 'orderNumber', 'clientUid', 'originPort', 'destinationPort',
+        'carrier', 'vesselName', 'containerNo', 'incoterms', 'weightKg',
+        'currentStage', 'currentLocation', 'etaDate', 'milestoneLog', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'trackingNumber', 'orderNumber', 'clientUid', 'originPort', 'destinationPort',
+        'carrier', 'vesselName', 'containerNo', 'incoterms', 'weightKg',
+        'currentStage', 'currentLocation', 'etaDate', 'milestoneLog', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.trackingNumber) && data.trackingNumber.size() <= 64 &&
+      data.orderNumber is string && data.orderNumber.size() >= 1 && data.orderNumber.size() <= 40 &&
+      isValidId(data.clientUid) &&
+      data.originPort is string && data.originPort.size() >= 1 && data.originPort.size() <= 120 &&
+      data.destinationPort is string && data.destinationPort.size() >= 1 && data.destinationPort.size() <= 120 &&
+      data.carrier is string && data.carrier.size() >= 1 && data.carrier.size() <= 100 &&
+      data.vesselName is string && data.vesselName.size() >= 1 && data.vesselName.size() <= 100 &&
+      data.containerNo is string && data.containerNo.size() >= 1 && data.containerNo.size() <= 64 &&
+      data.incoterms in ['FOB', 'CIF', 'EXW', 'DDP', 'CFR'] &&
+      data.weightKg is number && data.weightKg >= 0 &&
+      data.currentStage in ['order_confirmed', 'customs_cleared', 'vessel_loaded', 'ocean_transit', 'port_arrival', 'customs_released', 'delivered'] &&
+      data.currentLocation is string && data.currentLocation.size() >= 1 && data.currentLocation.size() <= 160 &&
+      data.etaDate is string && data.etaDate.size() >= 1 && data.etaDate.size() <= 40 &&
+      data.milestoneLog is list && data.milestoneLog.size() <= 10 &&
+      (data.milestoneLog.size() == 0 || data.milestoneLog[0] is string) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll([
+        'submitterUid', 'companyName', 'contactName', 'email', 'country',
+        'destinationPort', 'productInterest', 'estimatedVolume', 'incoterms',
+        'message', 'status', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'submitterUid', 'companyName', 'contactName', 'email', 'country',
+        'destinationPort', 'productInterest', 'estimatedVolume', 'incoterms',
+        'message', 'status', 'createdAt', 'updatedAt'
+      ]) &&
+      data.submitterUid is string && data.submitterUid.size() <= 128 &&
+      data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 160 &&
+      data.contactName is string && data.contactName.size() >= 1 && data.contactName.size() <= 120 &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+      data.country is string && data.country.size() >= 1 && data.country.size() <= 80 &&
+      data.destinationPort is string && data.destinationPort.size() <= 120 &&
+      data.productInterest is string && data.productInterest.size() >= 1 && data.productInterest.size() <= 160 &&
+      data.estimatedVolume is string && data.estimatedVolume.size() >= 1 && data.estimatedVolume.size() <= 80 &&
+      data.incoterms in ['FOB', 'CIF', 'EXW', 'DDP', 'CFR'] &&
+      data.message is string && data.message.size() >= 1 && data.message.size() <= 2000 &&
+      data.status in ['new', 'in_review', 'quoted', 'archived'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSiteSection(data) {
+      return data.keys().hasAll([
+        'eyebrow', 'headline', 'paragraph1', 'paragraph2', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'eyebrow', 'headline', 'paragraph1', 'paragraph2', 'updatedAt'
+      ]) &&
+      data.eyebrow is string && data.eyebrow.size() >= 1 && data.eyebrow.size() <= 80 &&
+      data.headline is string && data.headline.size() >= 1 && data.headline.size() <= 200 &&
+      data.paragraph1 is string && data.paragraph1.size() >= 1 && data.paragraph1.size() <= 3000 &&
+      data.paragraph2 is string && data.paragraph2.size() >= 1 && data.paragraph2.size() <= 3000 &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll([
+        'whatsappNumber', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'whatsappNumber', 'updatedAt'
+      ]) &&
+      data.whatsappNumber is string &&
+      data.whatsappNumber.size() >= 7 &&
+      data.whatsappNumber.size() <= 20 &&
+      data.whatsappNumber.matches('^[0-9]+$') &&
+      data.updatedAt is timestamp;
+    }
+
+    // Public export catalog (no PII)
+    match /products/{productId} {
+      allow get: if isValidId(productId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(productId) && isValidProduct(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // Isolated client account profiles (PII)
+    match /clients/{clientId} {
+      allow get: if isValidId(clientId) && (isOwner(clientId) || isAdmin());
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.uid == request.auth.uid);
+      allow create: if isVerifiedUser() && isValidId(clientId) && isValidClient(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time && (
+          isAdmin() || (
+            clientId == request.auth.uid && incoming().uid == request.auth.uid &&
+            incoming().status == 'active' && incoming().creditTier == 'Standard' &&
+            incoming().accountNotes == ''
+          )
+        );
+      allow update: if isVerifiedUser() && isValidId(clientId) && isValidClient(incoming()) &&
+        incoming().uid == existing().uid && incoming().email == existing().email &&
+        incoming().role == existing().role && incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() || (
+            isOwner(clientId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'companyName', 'contactName', 'phone', 'country', 'destinationPort',
+              'taxId', 'preferredIncoterms', 'preferredLanguage', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(clientId);
+    }
+
+    // Export orders scoped by clientUid or admin
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && (isAdmin() || (isVerifiedUser() && resource.data.clientUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.clientUid == request.auth.uid);
+      allow create: if isVerifiedUser() && isValidId(orderId) && isValidOrder(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time && (
+          isAdmin() || (
+            incoming().clientUid == request.auth.uid &&
+            incoming().status == 'pending_review' &&
+            incoming().trackingNumber == ''
+          )
+        );
+      allow update: if isVerifiedUser() && isValidId(orderId) && isValidOrder(incoming()) &&
+        incoming().orderNumber == existing().orderNumber &&
+        incoming().clientUid == existing().clientUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() || (
+            existing().clientUid == request.auth.uid &&
+            existing().status == 'pending_review' &&
+            incoming().status == 'cancelled' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(orderId);
+    }
+
+    // Real-time shipment tracking (no PII, addressable by trackingNumber)
+    match /shipments/{trackingNumber} {
+      allow get: if isValidId(trackingNumber);
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.clientUid == request.auth.uid);
+      allow create: if isAdmin() && isValidId(trackingNumber) && isValidShipment(incoming()) &&
+        incoming().trackingNumber == trackingNumber &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(trackingNumber) && isValidShipment(incoming()) &&
+        incoming().trackingNumber == existing().trackingNumber &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(trackingNumber);
+    }
+
+    // International trade inquiries (PII restricted on read)
+    match /inquiries/{inquiryId} {
+      allow get: if isValidId(inquiryId) && (isAdmin() || (isVerifiedUser() && resource.data.submitterUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.submitterUid == request.auth.uid);
+      allow create: if isValidId(inquiryId) && isValidInquiry(incoming()) &&
+        incoming().status == 'new' &&
+        (incoming().submitterUid == '' || (isVerifiedUser() && incoming().submitterUid == request.auth.uid)) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(inquiryId) && isValidInquiry(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(inquiryId);
+    }
+
+    // Public editorial homepage sections (no PII, admin-managed)
+    match /siteContent/{sectionId} {
+      allow get: if isValidId(sectionId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(sectionId) && isValidSiteSection(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(sectionId) && isValidSiteSection(incoming()) &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['eyebrow', 'headline', 'paragraph1', 'paragraph2', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(sectionId);
+    }
+
+    // Public business contact settings (no personal PII, admin-managed)
+    match /siteSettings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(settingId) && isValidSiteSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(settingId) && isValidSiteSettings(incoming()) &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['whatsappNumber', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(settingId);
+    }
+
+    // Admin registry
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && (isOwner(uid) || isAdmin());
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

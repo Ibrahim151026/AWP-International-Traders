@@ -1,0 +1,273 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "An exportable B2B product listing with international trade specifications.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "hsCode": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "fobPriceUsd": { "type": "number" },
+        "leastAmount": { "type": "number" },
+        "highestAmount": { "type": "number" },
+        "leastQuantity": { "type": "number" },
+        "highestQuantity": { "type": "number" },
+        "productQuality": { "type": "string", "minLength": 0, "maxLength": 160 },
+        "moq": { "type": "number" },
+        "unit": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "originPort": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "leadTimeDays": { "type": "number" },
+        "weightKg": { "type": "number" },
+        "dimensions": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "certifications": { "type": "string", "minLength": 0, "maxLength": 200 },
+        "availability": { "type": "string", "enum": ["in_stock", "made_to_order", "out_of_stock"] },
+        "imageUrl": { "type": "string", "minLength": 0, "maxLength": 350000 },
+        "images": { "type": "array" },
+        "imageUrls": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "sku",
+        "name",
+        "category",
+        "hsCode",
+        "description",
+        "fobPriceUsd",
+        "moq",
+        "unit",
+        "originPort",
+        "leadTimeDays",
+        "weightKg",
+        "dimensions",
+        "certifications",
+        "availability",
+        "imageUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ClientAccount": {
+      "title": "ClientAccount",
+      "description": "Authenticated international buyer account profile and trade preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "companyName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "contactName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "phone": { "type": "string", "minLength": 0, "maxLength": 40 },
+        "country": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "destinationPort": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "taxId": { "type": "string", "minLength": 0, "maxLength": 64 },
+        "preferredIncoterms": { "type": "string", "enum": ["FOB", "CIF", "EXW", "DDP", "CFR"] },
+        "preferredLanguage": { "type": "string", "enum": ["en", "es", "fr", "de", "zh"] },
+        "role": { "type": "string", "enum": ["client"] },
+        "status": { "type": "string", "enum": ["active", "pending_verification", "suspended"] },
+        "creditTier": { "type": "string", "enum": ["Standard", "Net-30", "LC-Verified"] },
+        "accountNotes": { "type": "string", "minLength": 0, "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "uid",
+        "email",
+        "companyName",
+        "contactName",
+        "phone",
+        "country",
+        "destinationPort",
+        "taxId",
+        "preferredIncoterms",
+        "preferredLanguage",
+        "role",
+        "status",
+        "creditTier",
+        "accountNotes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ExportOrder": {
+      "title": "ExportOrder",
+      "description": "International customer purchase order with pricing, incoterms, and tracking link.",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string", "minLength": 1, "maxLength": 40, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clientUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "clientEmail": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "companyName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "country": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "destinationPort": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "incoterms": { "type": "string", "enum": ["FOB", "CIF", "EXW", "DDP", "CFR"] },
+        "productId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "productSku": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "productName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "quantity": { "type": "number" },
+        "unitPriceUsd": { "type": "number" },
+        "subtotalUsd": { "type": "number" },
+        "freightUsd": { "type": "number" },
+        "totalUsd": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending_review", "confirmed", "customs_dispatch", "in_transit", "delivered", "cancelled"] },
+        "trackingNumber": { "type": "string", "minLength": 0, "maxLength": 64 },
+        "notes": { "type": "string", "minLength": 0, "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "orderNumber",
+        "clientUid",
+        "clientEmail",
+        "companyName",
+        "country",
+        "destinationPort",
+        "incoterms",
+        "productId",
+        "productSku",
+        "productName",
+        "quantity",
+        "unitPriceUsd",
+        "subtotalUsd",
+        "freightUsd",
+        "totalUsd",
+        "status",
+        "trackingNumber",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShipmentTracking": {
+      "title": "ShipmentTracking",
+      "description": "Real-time international freight tracking record indexed by tracking number.",
+      "type": "object",
+      "properties": {
+        "trackingNumber": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "orderNumber": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "clientUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "originPort": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "destinationPort": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "carrier": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "vesselName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "containerNo": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "incoterms": { "type": "string", "enum": ["FOB", "CIF", "EXW", "DDP", "CFR"] },
+        "weightKg": { "type": "number" },
+        "currentStage": { "type": "string", "enum": ["order_confirmed", "customs_cleared", "vessel_loaded", "ocean_transit", "port_arrival", "customs_released", "delivered"] },
+        "currentLocation": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "etaDate": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "milestoneLog": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "trackingNumber",
+        "orderNumber",
+        "clientUid",
+        "originPort",
+        "destinationPort",
+        "carrier",
+        "vesselName",
+        "containerNo",
+        "incoterms",
+        "weightKg",
+        "currentStage",
+        "currentLocation",
+        "etaDate",
+        "milestoneLog",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContactInquiry": {
+      "title": "ContactInquiry",
+      "description": "Trade inquiry / RFQ submitted by prospective or registered international buyers.",
+      "type": "object",
+      "properties": {
+        "submitterUid": { "type": "string", "minLength": 0, "maxLength": 128 },
+        "companyName": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "contactName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "country": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "destinationPort": { "type": "string", "minLength": 0, "maxLength": 120 },
+        "productInterest": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "estimatedVolume": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "incoterms": { "type": "string", "enum": ["FOB", "CIF", "EXW", "DDP", "CFR"] },
+        "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["new", "in_review", "quoted", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "submitterUid",
+        "companyName",
+        "contactName",
+        "email",
+        "country",
+        "destinationPort",
+        "productInterest",
+        "estimatedVolume",
+        "incoterms",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SiteSectionContent": {
+      "title": "SiteSectionContent",
+      "description": "Admin-editable editorial section content displayed on the public homepage.",
+      "type": "object",
+      "properties": {
+        "eyebrow": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "headline": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "paragraph1": { "type": "string", "minLength": 1, "maxLength": 3000 },
+        "paragraph2": { "type": "string", "minLength": 1, "maxLength": 3000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["eyebrow", "headline", "paragraph1", "paragraph2", "updatedAt"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Public business contact settings such as WhatsApp Business number managed by the verified owner.",
+      "type": "object",
+      "properties": {
+        "whatsappNumber": { "type": "string", "minLength": 7, "maxLength": 20, "pattern": "^[0-9]+$" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["whatsappNumber", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Export product catalog readable by all visitors and managed by admins."
+    },
+    "/clients/{clientId}": {
+      "schema": { "$ref": "#/entities/ClientAccount" },
+      "description": "Client company profiles keyed by Firebase Auth UID with owner and admin access."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/ExportOrder" },
+      "description": "Export purchase orders scoped to the owning client or admin."
+    },
+    "/shipments/{trackingNumber}": {
+      "schema": { "$ref": "#/entities/ShipmentTracking" },
+      "description": "Shipment tracking records addressable by trackingNumber and listable by owner or admin."
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/ContactInquiry" },
+      "description": "Trade inquiries / RFQs submitted from the public contact form and reviewed by admins."
+    },
+    "/siteContent/{sectionId}": {
+      "schema": { "$ref": "#/entities/SiteSectionContent" },
+      "description": "Public homepage editorial copy managed exclusively by the verified website owner."
+    },
+    "/siteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Public business contact settings (e.g., WhatsApp Business number) managed by admins."
+    }
+  }
+}
